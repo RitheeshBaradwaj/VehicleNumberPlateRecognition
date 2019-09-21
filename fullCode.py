@@ -1,3 +1,33 @@
+import numpy as np
+import cv2
+import pytesseract
+from PIL import Image
+import pyttsx3
+from googletrans import Translator
+
+# Load and then gray scale image
+
+def get_numberplate(image,contours):
+    # Get the cropped image using contours
+    x,y,w,h = cv2.boundingRect(contours)
+    #print(x,y,w,h)
+    cropped = image[y:y+h , x:x+w]
+
+    cv2.imshow('Required Area',cropped)
+    pytesseract.pytesseract.tesseract_cmd ='C:/Program Files/Tesseract-OCR/tesseract.exe'   
+
+    result = pytesseract.image_to_string(cropped)
+    print("Extracted Number Plate :",result)
+    # importing the pyttsx library
+    import pyttsx3
+    # initialisation 
+    engine = pyttsx3.init() 
+    engine.say(str(result))
+    engine.runAndWait() 
+    
+    cv2.waitKey(0)    
+
+    cv2.destroyAllWindows()
 import cv2
 import tkinter as tk
 from tkinter import filedialog
@@ -14,7 +44,7 @@ def get_image():
     root.withdraw() #hide main window
     fileName = filedialog.askopenfilename(
         filetypes = [ ("jpeg files","*.jpg"),("All files", ".*") ],
-        initialdir="R:/PROJECTS/VehicleNumberPlateDetection", #this one should be changed according to local reference
+        initialdir="R:/PROJECTS/VehicleNumberPlateDetection/Images(Input)", #this one should be changed according to local reference
         title="Select your image")
 
     global selected_file 
@@ -41,8 +71,8 @@ def detectPlate(imageFile,algo):
 
         # Read the image file
         #image = cv2.imread(imageFile)
-        imageFile="R:/PROJECTS/VehicleNumberPlateDetection/"+imageFile
-        print(imageFile)
+        imageFile="R:/PROJECTS/VehicleNumberPlateDetection/Images(Input)/"+imageFile
+        #print(imageFile)
         image = cv2.imread(imageFile)
         #image=Image.open(imageFile)
         # Resize the image - change width to 500
@@ -76,19 +106,9 @@ def detectPlate(imageFile,algo):
 
         #using otsu algo
         newedged = cv2.Canny(gray, lowThresh,high_thresh)
-        cv2.imshow("4 - Canny Edges otsu", newedged)
-
-        '''
-        #this is hard coded
         
-        defedged = cv2.Canny(gray, 170,200)
-        cv2.imshow("4 - Canny Edges default", defedged)
-        '''
-
-        '''if algo=="one":
-                cannyImg=newedged
-        if algo=="two":
-                cannyImg=edged'''
+        cv2.imshow("4 - Canny Edges otsu", newedged)
+        
                         
         # Find contours based on Edges
         ( cnts, _) = cv2.findContours(newedged, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
@@ -109,10 +129,12 @@ def detectPlate(imageFile,algo):
                     #This is our approx Number Plate Contour
                     break
 
-
+        #print(NumberPlateCnt)
         # Drawing the selected contour on the original image
         cv2.drawContours(image, [NumberPlateCnt], -1, (0,255,0), 3)
         cv2.imshow("Final Image With Number Plate Detected", image)
+        get_numberplate(image,NumberPlateCnt)
+        
 
         cv2.waitKey(0) #Wait for user input before closing the images displayed
 root = tk.Tk()
@@ -129,10 +151,10 @@ b1 = Button(root, text="Select Image", width="10", command = get_image, bg="whit
 #dropdown selection
 variable = StringVar(root)
 variable.set("Select the Algorithm")
-w = OptionMenu(root, variable, "one", "two")
+w = OptionMenu(root, variable, "one")
 algo = variable.get()
 #plate detection button
-b2 = Button(root, text="Detect Number Plates", width="20", height="1", command= lambda: detectPlate(selected_file,algo), fg="white", bg="black", state=DISABLED )
+b2 = Button(root, text="Detect Number Plate", width="20", height="1", command= lambda: detectPlate(selected_file,algo), fg="black", bg="white", state=DISABLED )
 label_1.grid(row=0,column=1)
 lab_im.grid(row=1,column=1)
 b1.grid(row=2,column=1);
